@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StaffManage</title>
+    <script
+            src="https://code.jquery.com/jquery-3.3.1.js"
+            integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script>
+        $(function(){
+            loadAll();
+        })
+        function loadAll(){
+            $.get("http://localhost:10006/home/staff",function(obj){
+                if(obj.result==0){
+                    var str_html='<div class="jumbotron" id="success" style="width: 800px; margin: 0 auto; padding-left: 155px;">'+
+                                    '<h1>'+obj.msg+'</h1>'+
+                                    '<p>please add staff</p>'+
+                                '</div>'
+
+                    $('#mytable').hide();
+                    $('#mytable').after(str_html);
+                }else{
+                    var data=obj.data;
+                    var dom=$('#mytable tbody');
+                    //先把旧数据清除
+                    $('#mytable tbody tr').remove();
+                    //遍历json
+                    for(var Key in data){
+                        var id=Key
+                        var staff=data[Key];
+                        var s_html='<tr>'+
+                                        '<td>'+staff.name+'</td>'+
+                                        '<td>'+staff.sex+'</td>'+
+                                        '<td>'+staff.age+'</td>'+
+                                        '<td>'+
+                                            '<input type="hidden" value="'+id+'"/>'+
+                                            '<span style="cursor:pointer;margin-right: 20px;margin-left: -15px;color:#269abc;" onclick="update(this)">update</span>'+
+                                            '<span style="cursor:pointer;margin-right: 20px;margin-left: -15px;color:red" onclick="del(this)">delete</span>'+
+                                        '</td>'+
+                                    '</tr>'
+                        dom.append(s_html);
+                    }
+                    $('#mytable').show();
+                }
+            });
+        }
+        function search(){
+            var search_parameter=$('#search').val();
+            if(search_parameter.length==0){
+                loadAll();
+                return;
+            }
+            $.ajax({
+                url:'http://localhost:10006/home/staff/'+search_parameter,
+                type:'get',
+                async:true,
+                success:function(result){
+                    if(result.result==0){
+                        alert(result.msg)
+                    }else{
+                        var data=result.data;
+                        var dom=$('#mytable tbody');
+                        //先把旧数据清除
+                        $('#mytable tbody tr').remove();
+                        //遍历json
+                        for(var Key in data){
+                            var id=Key
+                            var staff=data[Key];
+                            var s_html='<tr>'+
+                                            '<td>'+staff.name+'</td>'+
+                                            '<td>'+staff.sex+'</td>'+
+                                            '<td>'+staff.age+'</td>'+
+                                            '<td>'+
+                                                '<input type="hidden" value="'+id+'"/>'+
+                                                '<span style="cursor:pointer;margin-right: 20px;margin-left: -15px;color:#269abc;" onclick="update(this)">update</span>'+
+                                                '<span style="cursor:pointer;margin-right: 20px;margin-left: -15px;color:red" onclick="del(this)">delete</span>'+
+                                            '</td>'+
+                                        '</tr>'
+                            dom.append(s_html);
+                        }
+                    }
+                },
+                error:function(){
+                    alert('Server exploded!');
+                }
+            })
+        }
+        function add(){
+            $('#modal-form').attr('action','/home/staff');
+            $('#name').val('');
+            $('#sex').val('');
+            $('#age').val('');
+            $('#_method').remove();
+            $('#myModal').modal('show');
+        }
+        function update(obj){
+            var id=$(obj).prev().val();
+            var age=$(obj).parent().prev();
+            var sex=age.prev();
+            var name=sex.prev();
+            $("#id_input").val(id);
+            $('#modal-form').attr('action','/home/staff/'+id);
+            $('#name').val(name.html());
+            $('#sex').val(sex.html());
+            $('#age').val(age.html());
+            //表单只支持post和get方式，所以添加一个_method隐藏域，
+            //后台解析参数后再把请求行里的请求方式设置为put
+            $('#modal-form').prepend('<input type="hidden" name="_method" value="put" id="_method"/>');
+            $('#myModal').modal('show');
+        }
+        function del(obj){
+            var id=$(obj).prev().prev().val();
+            $.ajax({
+                url:'http://localhost:10006/home/staff/'+id,
+                type:'DELETE',
+                async:false,
+                success:function(result){
+                    if(result.result==1){
+                        var p=$(obj).parent().parent();
+                        p.remove();
+                    }else{
+                        console.log('delete error');
+                    }
+                },
+                error:function(){
+                    console.log('delete error');
+                }
+            })
+        }
+    </script>
+</head>
+<body>
+    <div style="margin:0 auto;width:300px">
+        <div class="form-group">
+            <input type="text" class="form-control" id="search" placeholder="search">
+        </div>
+        <button class="btn btn-success" style="margin-top: -86px;margin-left: 301px;" onclick="search()">GO</button>
+    </div>
+    <div style="margin:0 auto;width:200px">
+        <button onclick="add()" type="button" class="btn btn-info" style="margin-left: -27px;width: 300px;margin-top: -37px;">
+            add new
+        </button>
+    </div>
+<table class="table table-hover" style="margin:0 auto;width:1000px;" id="mytable">
+    <thead>
+        <tr style="text-align: center;">
+            <th>name</th>
+            <th>sex</th>
+            <th>age</th>
+            <th style="width:200px">operating</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!--<tr>-->
+            <!--<td>Wang</td>-->
+            <!--<td>Man</td>-->
+            <!--<td>18</td>-->
+            <!--<td>-->
+                <!--<input type="hidden" value="1"/>-->
+                <!--<span style="cursor:pointer;margin-right: 20px;margin-left: -15px;color:#269abc;" onclick="update(this)">update</span>-->
+                <!--<span style="cursor:pointer;margin-right: 20px;margin-left: -15px;color:red" onclick="del(this)">delete</span>-->
+            <!--</td>-->
+        <!--</tr>-->
+    </tbody>
+</table>
+<div class="modal fade" tabindex="-1" role="dialog" id="myModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">add new staff</h4>
+            </div>
+            <div class="modal-body">
+                <form role="form" action="" method="post" id="modal-form">
+                    <div class="form-group">
+                        <label>name</label><input type="text" name="name" class="form-control" id="name" />
+                    </div>
+                    <div class="form-group">
+                        <label>sex</label><input type="text" name="sex" class="form-control" id="sex" />
+                    </div>
+                    <div class="form-group">
+                        <label>age</label><input type="text" name="age" class="form-control" id="age" />
+                    </div>
+                    <div class="form-group">
+                    </div>
+                    <button type="submit" class="btn btn-primary" >Save changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
