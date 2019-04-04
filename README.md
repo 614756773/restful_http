@@ -1,6 +1,6 @@
 ## 简介
 使用socket解析http，做成一个微型的tomcat<BR>
-使用restful API风格实现员工的CRUD
+使用restful API风格实现员工的CRUD操作
 
 ## 程序入口
 * 启动Server类即可
